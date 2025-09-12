@@ -85,14 +85,23 @@ export class MemStorage implements IStorage {
     let clients = Array.from(this.clients.values());
     
     if (params?.search) {
-      const search = params.search.toLowerCase();
-      clients = clients.filter(
-        client =>
-          client.firstName.toLowerCase().includes(search) ||
-          client.lastName.toLowerCase().includes(search) ||
-          client.email?.toLowerCase().includes(search) ||
-          client.phone?.includes(search)
-      );
+      // Normalize and prepare search term for better Unicode and Turkish character handling
+      const normalizeText = (text: string) => text.normalize('NFC').toLowerCase().trim();
+      const search = normalizeText(params.search);
+      
+      clients = clients.filter(client => {
+        const firstName = normalizeText(client.firstName);
+        const lastName = normalizeText(client.lastName);
+        const fullName = normalizeText(`${client.firstName} ${client.lastName}`);
+        const email = client.email ? normalizeText(client.email) : '';
+        const phone = client.phone || '';
+        
+        return firstName.includes(search) ||
+               lastName.includes(search) ||
+               fullName.includes(search) ||
+               email.includes(search) ||
+               phone.includes(search);
+      });
     }
 
     const total = clients.length;
