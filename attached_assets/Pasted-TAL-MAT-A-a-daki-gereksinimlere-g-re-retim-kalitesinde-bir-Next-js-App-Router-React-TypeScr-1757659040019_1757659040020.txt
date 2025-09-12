@@ -1,0 +1,124 @@
+TALİMAT: Aşağıdaki gereksinimlere göre üretim kalitesinde bir Next.js (App Router) + React + TypeScript projesi oluştur. UI için Tailwind + shadcn/ui kullan. Proje, benim geliştireceğim harici REST API’ye bağlanacak; tüm API çağrılarını tipli ve değiştirilebilir baseURL ile hazırla. Kod tamamlandığında çalışır halde olmalı, mock data ile sayfalar görülebilir olmalı ve README’de kurulum/adımlar net yazmalı.
+
+# TEKNOLOJİ/ALTYAPI
+- Next.js (App Router, TypeScript)
+- Tailwind CSS, shadcn/ui (buton, input, dialog, dropdown, badge, table, form vb.)
+- react-hook-form + zod (form & doğrulama)
+- Tanstack Query (React Query) (server state, caching, optimistic update)
+- Zustand veya Context (küçük UI state’leri)
+- date-fns (takvim/tarih işlemleri), i18n: tr-TR varsayılan
+- İkon: lucide-react
+- Kod kalitesi: ESLint + Prettier
+- .env ile API_BASE_URL yönetimi (örn. NEXT_PUBLIC_API_BASE_URL)
+- Replit uyumlu node versiyonu ve start script’leri
+
+# DİZİN YAPISI (örnek)
+- src/
+  - app/(dashboard)
+    - layout.tsx, page.tsx (overview)
+    - clients/ (liste + detay + form)
+    - templates/ (şablon builder + liste)
+    - plans/ (şablondan plan oluşturma + atama)
+    - appointments/ (takvim görünümü + list)
+    - settings/
+  - components/ui/ (shadcn)
+  - components/
+    - ClientForm.tsx, ClientTable.tsx, ClientCard.tsx
+    - TemplateBuilder.tsx (bileşen tabanlı alan ekleme), TemplateList.tsx
+    - DietPlanForm.tsx, PlanPreview.tsx
+    - AppointmentCalendar.tsx, AppointmentForm.tsx
+    - PageHeader.tsx, EmptyState.tsx, ConfirmDialog.tsx
+  - lib/
+    - api/client.ts (axios instance ya da fetch wrapper)
+    - api/hooks/ (useClients, useTemplates, usePlans, useAppointments)
+    - validators/ (zod şemaları)
+    - utils/date.ts, utils/format.ts
+    - types/*.ts (Client, Template, DietPlan, Appointment vb.)
+  - store/ (zustand)
+- public/
+- README.md
+
+# EKRANLAR & AKIŞLAR
+1) Danışan Yönetimi (Clients)
+   - Listeleme: arama/filtre/sıralama, sayfalama.
+   - Oluştur/Güncelle (modal veya ayrı sayfa): ad, soyad, email, telefon, doğum tarihi, notlar, hedefler.
+   - Detay sayfası: genel bilgiler, atanan diyet planları, randevular, hızlı aksiyon butonları.
+   - CRUD işlemleri: optimistic update’li.
+2) Şablonlar (Templates)
+   - Diyet şablonu builder: Bölüm ekleme (Kahvaltı/Öğle/Akşam/Ara Öğün), öğün öğeleri/gramaj/notlar.
+   - Şablon listesini yönet (oluştur, klonla, sil, yeniden adlandır).
+3) Diyet Planları (Plans)
+   - Bir danışana şablondan plan üret (tarih aralığı, özel notlar).
+   - Plan önizleme ve PDF’e uygun baskı görünümü (CSS print).
+4) Randevular (Appointments)
+   - Takvim görünümü (hafta/ay), liste görünümü.
+   - Randevu oluştur/düzenle (danışan seçimi, tarih-saat, açıklama, durum).
+5) Ayarlar
+   - Profil, dil, tema (dark mode), varsayılan randevu süresi vb.
+
+# REST API SÖZLEŞMESİ (ben geliştireceğim; sen tipleri ve istekleri hazırla)
+Temel endpoint’leri şu şekilde varsay:
+- Clients:
+  - GET    /clients?search=&page=&pageSize=
+  - GET    /clients/{id}
+  - POST   /clients
+  - PUT    /clients/{id}
+  - DELETE /clients/{id}
+- Templates:
+  - GET    /templates
+  - GET    /templates/{id}
+  - POST   /templates
+  - PUT    /templates/{id}
+  - DELETE /templates/{id}
+- Plans:
+  - GET    /plans?clientId=
+  - GET    /plans/{id}
+  - POST   /plans           (body: clientId, templateId, dateRange, notes)
+  - PUT    /plans/{id}
+  - DELETE /plans/{id}
+- Appointments:
+  - GET    /appointments?clientId=&from=&to=
+  - GET    /appointments/{id}
+  - POST   /appointments    (body: clientId, startsAt, endsAt, note, status)
+  - PUT    /appointments/{id}
+  - DELETE /appointments/{id}
+
+# TİPLER (örnek, TypeScript)
+- Client { id: string; firstName; lastName; email?; phone?; birthDate?; notes?; goals?: string[]; createdAt; updatedAt }
+- Template { id: string; name: string; sections: TemplateSection[]; createdAt; updatedAt }
+- TemplateSection { id: string; title: "Kahvaltı" | "Öğle" | "Akşam" | "Ara Öğün"; items: TemplateItem[] }
+- TemplateItem { id: string; label: string; amount?: string; note?: string }
+- DietPlan { id: string; clientId: string; templateId: string; dateStart: string; dateEnd: string; notes?: string; sections: TemplateSection[] }
+- Appointment { id: string; clientId: string; startsAt: string; endsAt: string; note?: string; status: "scheduled" | "done" | "canceled" }
+
+# BİLEŞEN DETAYLARI
+- Formlar: react-hook-form + zod resolver; shadcn Form, Input, Select, Textarea, DatePicker benzeri.
+- Tablolar: shadcn table + kolon filtre/sort; boş durum için EmptyState.
+- Takvim: basit bir grid (kütüphane şart değil), haftalık/aylık görünüm; tarih gezinme.
+- TemplateBuilder: “Bölüm Ekle” (dropdown), öğün içi item listesi (ekle/sil/sürükle isteğe bağlı), form doğrulama.
+- PlanPreview: yazdırılabilir (print) CSS ile sade, A4’e uygun.
+- ConfirmDialog: silme/iptal işlemlerinde onay.
+
+# VERİ YÜKLEME/STATE
+- useQuery/useMutation ile tüm CRUD; hata/başarı toast’ları.
+- .env’den alınan NEXT_PUBLIC_API_BASE_URL ile istek at. Base URL boşsa local mock’ları kullan (mock handler ekle).
+
+# DİLLENDİRME & ERİŞİLEBİLİRLİK
+- TR metinler (UI string’lerini ayrı bir sözlük dosyasında topla).
+- Form alanlarında label/help text/aria attr’ları.
+
+# TEST & DÖKÜMANTASYON
+- README: Kurulum, geliştirme çalıştırma, .env örnekleri, seed/mock kullanımı, build/export talimatları.
+- Minimum: 1-2 kritik hook/bileşen için örnek test (isteğe bağlı).
+
+# KABUL KRİTERLERİ
+- replit’te “Run” sonrası app açılmalı; clients/templates/plans/appointments sayfaları gezilebilir.
+- Tüm CRUD akışları UI’dan tetiklenebilir ve mock/gerçek API’ya kolayca geçiş yapılabilir.
+- Kod düzenli, tipli, uyarısız derlenir; ESLint/Prettier konfigürlüdür.
+- Dark mode çalışır; mobil uyum temel seviyede sağlanır.
+
+Lütfen: 
+1) Projeyi oluştur, 
+2) shadcn bileşenlerini kur/uyarla, 
+3) örnek sayfalar + mock data ile demo et, 
+4) README’yi yaz.
