@@ -3,31 +3,46 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAppointments } from "@/lib/hooks/useAppointments";
-import { format, startOfWeek, addDays, addWeeks, subWeeks } from "date-fns";
+import { format, startOfWeek, addDays, addWeeks, subWeeks, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, isSameMonth } from "date-fns";
 import { tr } from "date-fns/locale";
 
 export default function AppointmentCalendar() {
-  const [currentWeek, setCurrentWeek] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<"week" | "month">("week");
   
-  const weekStart = startOfWeek(currentWeek, { weekStartsOn: 1 });
+  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   
+  const monthStart = startOfMonth(currentDate);
+  const monthEnd = endOfMonth(currentDate);
+  const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  
+  // Calculate the full calendar grid for month view (6 weeks)
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+  const calendarEnd = addDays(calendarStart, 41); // 6 weeks = 42 days
+  const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+  
   const { data: appointments, isLoading } = useAppointments({
-    from: format(weekStart, "yyyy-MM-dd"),
-    to: format(addDays(weekStart, 6), "yyyy-MM-dd"),
+    from: view === "week" ? format(weekStart, "yyyy-MM-dd") : format(calendarStart, "yyyy-MM-dd"),
+    to: view === "week" ? format(addDays(weekStart, 6), "yyyy-MM-dd") : format(calendarEnd, "yyyy-MM-dd"),
   });
 
   const timeSlots = Array.from({ length: 10 }, (_, i) => 
     `${String(9 + i).padStart(2, "0")}:00`
   );
 
-  const navigateWeek = (direction: "prev" | "next") => {
-    setCurrentWeek(prev => direction === "next" ? addWeeks(prev, 1) : subWeeks(prev, 1));
+  const navigate = (direction: "prev" | "next") => {
+    setCurrentDate(prev => {
+      if (view === "week") {
+        return direction === "next" ? addWeeks(prev, 1) : subWeeks(prev, 1);
+      } else {
+        return direction === "next" ? addMonths(prev, 1) : subMonths(prev, 1);
+      }
+    });
   };
 
   const goToToday = () => {
-    setCurrentWeek(new Date());
+    setCurrentDate(new Date());
   };
 
   if (isLoading) {
@@ -40,22 +55,22 @@ export default function AppointmentCalendar() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <h4 className="text-xl font-semibold">
-            {format(currentWeek, "MMMM yyyy", { locale: tr })}
+            {format(currentDate, "MMMM yyyy", { locale: tr })}
           </h4>
           <div className="flex gap-2">
             <Button 
               variant="outline" 
               size="icon"
-              onClick={() => navigateWeek("prev")}
-              data-testid="button-prev-week"
+              onClick={() => navigate("prev")}
+              data-testid={`button-prev-${view}`}
             >
               <ChevronLeft className="w-4 h-4" />
             </Button>
             <Button 
               variant="outline" 
               size="icon"
-              onClick={() => navigateWeek("next")}
-              data-testid="button-next-week"
+              onClick={() => navigate("next")}
+              data-testid={`button-next-${view}`}
             >
               <ChevronRight className="w-4 h-4" />
             </Button>
@@ -154,6 +169,78 @@ export default function AppointmentCalendar() {
                 })}
               </div>
             ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Monthly Calendar View */}
+      {view === "month" && (
+        <Card className="overflow-hidden">
+          {/* Month Header - Days of Week */}
+          <div className="grid grid-cols-7 border-b border-border">
+            {["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"].map((dayName, index) => (
+              <div
+                key={index}
+                className="p-4 text-center text-sm font-medium text-muted-foreground border-r border-border last:border-r-0"
+              >
+                {dayName}
+              </div>
+            ))}
+          </div>
+
+          {/* Month Grid */}
+          <div className="grid grid-cols-7">
+            {calendarDays.map((day, index) => {
+              const isToday = format(day, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
+              const isCurrentMonth = isSameMonth(day, currentDate);
+              const dayAppointments = appointments?.filter((apt: any) => 
+                format(new Date(apt.startsAt), "yyyy-MM-dd") === format(day, "yyyy-MM-dd")
+              ) || [];
+
+              return (
+                <div
+                  key={index}
+                  className={`min-h-[120px] p-2 border-r border-b border-border last:border-r-0 ${
+                    isToday ? "bg-primary/5" : ""
+                  } ${!isCurrentMonth ? "bg-muted/30" : ""}`}
+                  data-testid={`day-${format(day, "yyyy-MM-dd")}`}
+                >
+                  {/* Day Number */}
+                  <div className={`text-sm font-medium mb-2 ${
+                    isToday 
+                      ? "bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center" 
+                      : isCurrentMonth 
+                        ? "text-foreground" 
+                        : "text-muted-foreground"
+                  }`}>
+                    {format(day, "d")}
+                  </div>
+
+                  {/* Appointments */}
+                  <div className="space-y-1">
+                    {dayAppointments.slice(0, 3).map((appointment: any) => (
+                      <div
+                        key={appointment.id}
+                        className="bg-chart-2/10 border border-chart-2 rounded px-2 py-1 text-xs"
+                        data-testid={`month-appointment-${appointment.id}`}
+                      >
+                        <div className="font-medium text-chart-2 truncate">
+                          {appointment.title}
+                        </div>
+                        <div className="text-muted-foreground">
+                          {format(new Date(appointment.startsAt), "HH:mm")}
+                        </div>
+                      </div>
+                    ))}
+                    {dayAppointments.length > 3 && (
+                      <div className="text-xs text-muted-foreground">
+                        +{dayAppointments.length - 3} daha
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </Card>
       )}

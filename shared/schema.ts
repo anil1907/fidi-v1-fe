@@ -80,11 +80,17 @@ export const insertDietPlanSchema = createInsertSchema(dietPlans).omit({
   updatedAt: true,
 });
 
-export const insertAppointmentSchema = createInsertSchema(appointments).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
+export const insertAppointmentSchema = createInsertSchema(appointments)
+  .omit({
+    id: true,
+    createdAt: true,
+    updatedAt: true,
+  })
+  .extend({
+    startsAt: z.coerce.date(),
+    endsAt: z.coerce.date(),
+    status: z.enum(["scheduled", "done", "canceled"]).default("scheduled"),
+  });
 
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
