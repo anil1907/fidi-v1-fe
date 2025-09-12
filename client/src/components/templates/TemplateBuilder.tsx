@@ -6,6 +6,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTemplates } from "@/lib/hooks/useTemplates";
+import { DndContext, closestCenter, type DragEndEvent } from "@dnd-kit/core";
+import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import type { TemplateSection, TemplateItem } from "@shared/schema";
 
 const MEAL_TYPES = [
@@ -46,6 +49,7 @@ export default function TemplateBuilder({ onClose }: TemplateBuilderProps) {
           label: "",
           amount: "",
           note: "",
+          calories: undefined,
         };
         return {
           ...section,
@@ -102,6 +106,157 @@ export default function TemplateBuilder({ onClose }: TemplateBuilderProps) {
     return meal?.icon || Sunrise;
   };
 
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+
+    const activeId = active.id as string;
+    const overId = over.id as string;
+
+    if (activeId.startsWith('section-')) {
+      // Handle section reordering
+      const activeSectionId = activeId.replace('section-', '');
+      const overSectionId = overId.replace('section-', '');
+      
+      if (activeSectionId !== overSectionId) {
+        const oldIndex = sections.findIndex(s => s.id === activeSectionId);
+        const newIndex = sections.findIndex(s => s.id === overSectionId);
+        setSections(arrayMove(sections, oldIndex, newIndex));
+      }
+    } else if (activeId.startsWith('item-')) {
+      // Handle item reordering within a section
+      const activeItemId = activeId.replace('item-', '');
+      const overItemId = overId.replace('item-', '');
+      
+      setSections(sections.map(section => {
+        const activeItemIndex = section.items.findIndex(item => item.id === activeItemId);
+        const overItemIndex = section.items.findIndex(item => item.id === overItemId);
+        
+        if (activeItemIndex !== -1 && overItemIndex !== -1) {
+          return {
+            ...section,
+            items: arrayMove(section.items, activeItemIndex, overItemIndex)
+          };
+        }
+        return section;
+      }));
+    }
+  };
+
+  // Sortable Section Component
+  function SortableSection({ section, onRemoveSection, onAddItem, onUpdateItem, onRemoveItem, getMealIcon }: {
+    section: TemplateSection;
+    onRemoveSection: (id: string) => void;
+    onAddItem: (sectionId: string) => void;
+    onUpdateItem: (sectionId: string, itemId: string, updates: Partial<TemplateItem>) => void;
+    onRemoveItem: (sectionId: string, itemId: string) => void;
+    getMealIcon: (title: TemplateSection["title"]) => any;
+  }) {
+    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: `section-${section.id}` });
+    const style = { transform: CSS.Transform.toString(transform), transition };
+    const Icon = getMealIcon(section.title);
+
+    return (
+      <Card ref={setNodeRef} style={style} className="p-3" data-testid={`section-${section.id}`}>
+        <div className="flex items-center justify-between mb-2">
+          <h5 className="font-medium flex items-center gap-2">
+            <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
+              <GripVertical className="w-4 h-4 text-muted-foreground" />
+            </div>
+            <Icon className="w-4 h-4 text-chart-3" />
+            {section.title}
+          </h5>
+          <Button variant="ghost" size="icon" onClick={() => onRemoveSection(section.id)} data-testid={`button-remove-section-${section.id}`}>
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+        
+        <SortableContext items={section.items.map(item => `item-${item.id}`)} strategy={verticalListSortingStrategy}>
+          <div className="space-y-2">
+            {section.items.map((item) => (
+              <SortableItem
+                key={item.id}
+                item={item}
+                sectionId={section.id}
+                onUpdateItem={onUpdateItem}
+                onRemoveItem={onRemoveItem}
+              />
+            ))}
+            <Button
+              variant="ghost"
+              className="w-full h-8 text-xs text-muted-foreground border border-dashed"
+              onClick={() => onAddItem(section.id)}
+              data-testid={`button-add-item-${section.id}`}
+            >
+              + Öğe Ekle
+            </Button>
+          </div>
+        </SortableContext>
+      </Card>
+    );
+  }
+
+  // Sortable Item Component
+  function SortableItem({ item, sectionId, onUpdateItem, onRemoveItem }: {
+    item: TemplateItem;
+    sectionId: string;
+    onUpdateItem: (sectionId: string, itemId: string, updates: Partial<TemplateItem>) => void;
+    onRemoveItem: (sectionId: string, itemId: string) => void;
+  }) {
+    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: `item-${item.id}` });
+    const style = { transform: CSS.Transform.toString(transform), transition };
+
+    return (
+      <div ref={setNodeRef} style={style} className="space-y-2 bg-muted px-3 py-2 rounded" data-testid={`item-${item.id}`}>
+        <div className="flex items-center gap-2">
+          <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
+            <GripVertical className="w-4 h-4 text-muted-foreground" />
+          </div>
+          <Input
+            value={item.label}
+            onChange={(e) => onUpdateItem(sectionId, item.id, { label: e.target.value })}
+            placeholder="Öğe adı"
+            className="flex-1 h-8"
+            data-testid={`input-item-label-${item.id}`}
+          />
+          <Input
+            value={item.amount || ""}
+            onChange={(e) => onUpdateItem(sectionId, item.id, { amount: e.target.value })}
+            placeholder="Miktar"
+            className="w-24 h-8"
+            data-testid={`input-item-amount-${item.id}`}
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onRemoveItem(sectionId, item.id)}
+            className="h-8 w-8"
+            data-testid={`button-remove-item-${item.id}`}
+          >
+            <X className="w-3 h-3" />
+          </Button>
+        </div>
+        <div className="flex gap-2">
+          <Input
+            value={item.note || ""}
+            onChange={(e) => onUpdateItem(sectionId, item.id, { note: e.target.value })}
+            placeholder="Not (opsiyonel)"
+            className="flex-1 h-8 text-sm"
+            data-testid={`input-item-note-${item.id}`}
+          />
+          <Input
+            type="number"
+            value={item.calories || ""}
+            onChange={(e) => onUpdateItem(sectionId, item.id, { calories: e.target.value ? parseInt(e.target.value) : undefined })}
+            placeholder="Kalori"
+            className="w-20 h-8 text-sm"
+            data-testid={`input-item-calories-${item.id}`}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -151,64 +306,23 @@ export default function TemplateBuilder({ onClose }: TemplateBuilderProps) {
               </Select>
             </div>
 
-            <div className="space-y-3">
-              {sections.map((section) => {
-                const Icon = getMealIcon(section.title);
-                return (
-                  <Card key={section.id} className="p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <h5 className="font-medium flex items-center gap-2">
-                        <Icon className="w-4 h-4 text-chart-3" />
-                        {section.title}
-                      </h5>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeSection(section.id)}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      {section.items.map((item) => (
-                        <div key={item.id} className="flex items-center gap-2 bg-muted px-3 py-2 rounded">
-                          <GripVertical className="w-4 h-4 text-muted-foreground" />
-                          <Input
-                            value={item.label}
-                            onChange={(e) => updateItem(section.id, item.id, { label: e.target.value })}
-                            placeholder="Öğe adı"
-                            className="flex-1 h-8"
-                          />
-                          <Input
-                            value={item.amount || ""}
-                            onChange={(e) => updateItem(section.id, item.id, { amount: e.target.value })}
-                            placeholder="Miktar"
-                            className="w-24 h-8"
-                          />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeItem(section.id, item.id)}
-                            className="h-8 w-8"
-                          >
-                            <X className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      ))}
-                      <Button
-                        variant="ghost"
-                        className="w-full h-8 text-xs text-muted-foreground border border-dashed"
-                        onClick={() => addItem(section.id)}
-                        data-testid={`button-add-item-${section.id}`}
-                      >
-                        + Öğe Ekle
-                      </Button>
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
+            <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={sections.map(s => `section-${s.id}`)} strategy={verticalListSortingStrategy}>
+                <div className="space-y-3">
+                  {sections.map((section) => (
+                    <SortableSection
+                      key={section.id}
+                      section={section}
+                      onRemoveSection={removeSection}
+                      onAddItem={addItem}
+                      onUpdateItem={updateItem}
+                      onRemoveItem={removeItem}
+                      getMealIcon={getMealIcon}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
           </div>
         </div>
 
