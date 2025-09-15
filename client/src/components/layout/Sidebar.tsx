@@ -31,8 +31,8 @@ const navigation = [
 ];
 
 const secondaryNavigation = [
-  { name: "Analitik", href: "/analytics", icon: BarChart3 },
-  { name: "Ayarlar", href: "/settings", icon: Settings },
+  { name: "Analitik", href: "#", icon: BarChart3, disabled: true },
+  { name: "Ayarlar", href: "#", icon: Settings, disabled: true },
 ];
 
 export default function Sidebar() {
@@ -55,11 +55,9 @@ export default function Sidebar() {
         {/* Logo/Brand */}
         <div className="flex h-16 shrink-0 items-center px-6 border-b border-border">
           <div className="flex items-center gap-3">
-            <img 
-              src="/attached_assets/fidi-logo_1757925085635.jpg" 
-              alt="Fidi Logo" 
-              className="w-8 h-8 object-contain"
-            />
+            <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">F</span>
+            </div>
             <span className="text-xl font-semibold text-primary">Fidi</span>
           </div>
         </div>
@@ -100,7 +98,22 @@ export default function Sidebar() {
             </h3>
             <nav className="space-y-1">
               {secondaryNavigation.map((item) => {
-                const isActive = location === item.href;
+                const isActive = location === item.href && !item.disabled;
+                const isDisabled = item.disabled;
+                
+                if (isDisabled) {
+                  return (
+                    <div
+                      key={item.name}
+                      className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-muted-foreground/50 cursor-not-allowed"
+                      data-testid={`nav-disabled-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
+                    >
+                      <item.icon className="w-4 h-4" />
+                      {item.name}
+                    </div>
+                  );
+                }
+                
                 return (
                   <Link
                     key={item.name}
