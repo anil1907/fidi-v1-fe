@@ -7,15 +7,19 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useClientMutations } from "@/lib/hooks/useClients";
 import { clientFormSchema } from "@/lib/validators";
 import type { z } from "zod";
+import type { Client } from "@shared/schema";
+import { useEffect } from "react";
 
 type ClientFormData = z.infer<typeof clientFormSchema>;
 
 interface ClientFormProps {
+  client?: Client;
+  mode?: "create" | "edit";
   onSuccess?: () => void;
 }
 
-export default function ClientForm({ onSuccess }: ClientFormProps) {
-  const { createClient } = useClientMutations();
+export default function ClientForm({ client, mode = "create", onSuccess }: ClientFormProps) {
+  const { createClient, updateClient } = useClientMutations();
   
   const form = useForm<ClientFormData>({
     resolver: zodResolver(clientFormSchema),
@@ -29,13 +33,31 @@ export default function ClientForm({ onSuccess }: ClientFormProps) {
     },
   });
 
+  // Update form values when client data changes for edit mode
+  useEffect(() => {
+    if (mode === "edit" && client) {
+      form.reset({
+        firstName: client.firstName || "",
+        lastName: client.lastName || "",
+        email: client.email || "",
+        phone: client.phone || "",
+        notes: client.notes || "",
+        goals: client.goals || [],
+      });
+    }
+  }, [client, mode, form]);
+
   const onSubmit = async (data: ClientFormData) => {
     try {
-      await createClient.mutateAsync(data);
+      if (mode === "edit" && client) {
+        await updateClient.mutateAsync({ id: client.id, data });
+      } else {
+        await createClient.mutateAsync(data);
+      }
       form.reset();
       onSuccess?.();
     } catch (error) {
-      console.error("Failed to create client:", error);
+      console.error(`Failed to ${mode} client:`, error);
     }
   };
 
@@ -124,10 +146,12 @@ export default function ClientForm({ onSuccess }: ClientFormProps) {
           </Button>
           <Button 
             type="submit" 
-            disabled={createClient.isPending}
+            disabled={createClient.isPending || updateClient.isPending}
             data-testid="button-save-client"
           >
-            {createClient.isPending ? "Kaydediliyor..." : "Kaydet"}
+            {(createClient.isPending || updateClient.isPending) 
+              ? "Kaydediliyor..." 
+              : mode === "edit" ? "Güncelle" : "Kaydet"}
           </Button>
         </div>
       </form>
