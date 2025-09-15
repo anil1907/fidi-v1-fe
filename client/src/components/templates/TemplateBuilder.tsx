@@ -100,6 +100,9 @@ export default function TemplateBuilder({ template, mode = "create", onClose }: 
   const handleSave = async () => {
     if (!name.trim()) return;
     
+    // Ensure any focused input is blurred to trigger onBlur handlers
+    (document.activeElement as HTMLElement | null)?.blur();
+    
     try {
       if (mode === "edit" && template) {
         await updateTemplate.mutateAsync({
@@ -228,6 +231,34 @@ export default function TemplateBuilder({ template, mode = "create", onClose }: 
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: `item-${item.id}` });
     const style = { transform: CSS.Transform.toString(transform), transition };
 
+    // Local state to prevent re-renders while typing
+    const [localValues, setLocalValues] = useState({
+      label: item.label,
+      amount: item.amount || "",
+      note: item.note || "",
+      calories: item.calories ?? ""
+    });
+
+    // Update local state when item prop changes (e.g., from drag & drop)
+    useEffect(() => {
+      setLocalValues({
+        label: item.label,
+        amount: item.amount || "",
+        note: item.note || "",
+        calories: item.calories ?? ""
+      });
+    }, [item.id, item.label, item.amount, item.note, item.calories]);
+
+    const handleBlur = (field: keyof typeof localValues, value: string) => {
+      const updates: Partial<TemplateItem> = {};
+      if (field === 'calories') {
+        updates[field] = value ? parseInt(value) : undefined;
+      } else {
+        updates[field] = value;
+      }
+      onUpdateItem(sectionId, item.id, updates);
+    };
+
     return (
       <div ref={setNodeRef} style={style} className="space-y-2 bg-muted px-3 py-2 rounded" data-testid={`item-${item.id}`}>
         <div className="flex items-center gap-2">
@@ -235,15 +266,17 @@ export default function TemplateBuilder({ template, mode = "create", onClose }: 
             <GripVertical className="w-4 h-4 text-muted-foreground" />
           </div>
           <Input
-            value={item.label}
-            onChange={(e) => onUpdateItem(sectionId, item.id, { label: e.target.value })}
+            value={localValues.label}
+            onChange={(e) => setLocalValues(prev => ({ ...prev, label: e.target.value }))}
+            onBlur={(e) => handleBlur('label', e.target.value)}
             placeholder="Öğe adı"
             className="flex-1 h-8"
             data-testid={`input-item-label-${item.id}`}
           />
           <Input
-            value={item.amount || ""}
-            onChange={(e) => onUpdateItem(sectionId, item.id, { amount: e.target.value })}
+            value={localValues.amount}
+            onChange={(e) => setLocalValues(prev => ({ ...prev, amount: e.target.value }))}
+            onBlur={(e) => handleBlur('amount', e.target.value)}
             placeholder="Miktar"
             className="w-24 h-8"
             data-testid={`input-item-amount-${item.id}`}
@@ -260,16 +293,18 @@ export default function TemplateBuilder({ template, mode = "create", onClose }: 
         </div>
         <div className="flex gap-2">
           <Input
-            value={item.note || ""}
-            onChange={(e) => onUpdateItem(sectionId, item.id, { note: e.target.value })}
+            value={localValues.note}
+            onChange={(e) => setLocalValues(prev => ({ ...prev, note: e.target.value }))}
+            onBlur={(e) => handleBlur('note', e.target.value)}
             placeholder="Not (opsiyonel)"
             className="flex-1 h-8 text-sm"
             data-testid={`input-item-note-${item.id}`}
           />
           <Input
             type="number"
-            value={item.calories || ""}
-            onChange={(e) => onUpdateItem(sectionId, item.id, { calories: e.target.value ? parseInt(e.target.value) : undefined })}
+            value={localValues.calories}
+            onChange={(e) => setLocalValues(prev => ({ ...prev, calories: e.target.value }))}
+            onBlur={(e) => handleBlur('calories', e.target.value)}
             placeholder="Kalori"
             className="w-20 h-8 text-sm"
             data-testid={`input-item-calories-${item.id}`}
