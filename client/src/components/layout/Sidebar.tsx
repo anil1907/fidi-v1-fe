@@ -37,7 +37,7 @@ export default function Sidebar() {
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <Utensils className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-semibold">Nutrisyonel</span>
+            <span className="text-xl font-semibold">Fidi</span>
           </div>
         </div>
 
