@@ -6,6 +6,10 @@ interface UIState {
   sidebarCollapsed: boolean;
   setSidebarCollapsed: (collapsed: boolean) => void;
   
+  // Mobile sidebar state
+  mobileSidebarOpen: boolean;
+  setMobileSidebarOpen: (open: boolean) => void;
+  
   // Modal states
   modals: {
     createClient: boolean;
@@ -114,6 +118,11 @@ export const useUIStore = create<UIState>()(
       sidebarCollapsed: false,
       setSidebarCollapsed: (collapsed) => 
         set({ sidebarCollapsed: collapsed }),
+      
+      // Mobile sidebar state  
+      mobileSidebarOpen: false,
+      setMobileSidebarOpen: (open) => 
+        set({ mobileSidebarOpen: open }),
       
       // Modal states
       modals: defaultModalState,
