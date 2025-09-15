@@ -6,16 +6,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useClients } from "@/lib/hooks/useClients";
+import { useClients, useClientMutations } from "@/lib/hooks/useClients";
 import { calculateAge } from "@/lib/utils";
 import EmptyState from "@/components/common/EmptyState";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
+import type { Client } from "@shared/schema";
 
 interface ClientTableProps {
   limit?: number;
+  onEditClient?: (client: Client) => void;
 }
 
-export default function ClientTable({ limit }: ClientTableProps) {
+export default function ClientTable({ limit, onEditClient }: ClientTableProps) {
   const [search, setSearch] = useState("");
   const [page] = useState(1);
   const [deleteClientId, setDeleteClientId] = useState<string | null>(null);
@@ -25,6 +27,7 @@ export default function ClientTable({ limit }: ClientTableProps) {
     page, 
     pageSize: limit || 10 
   });
+  const { deleteClient } = useClientMutations();
 
   const clients = data?.clients || [];
   const total = data?.total || 0;
@@ -160,6 +163,7 @@ export default function ClientTable({ limit }: ClientTableProps) {
                     <Button 
                       variant="ghost" 
                       size="icon"
+                      onClick={() => onEditClient?.(client)}
                       data-testid={`button-edit-client-${client.id}`}
                     >
                       <Edit className="w-4 h-4" />
@@ -202,9 +206,15 @@ export default function ClientTable({ limit }: ClientTableProps) {
       <ConfirmDialog
         isOpen={!!deleteClientId}
         onClose={() => setDeleteClientId(null)}
-        onConfirm={() => {
-          // TODO: Implement delete
-          setDeleteClientId(null);
+        onConfirm={async () => {
+          if (deleteClientId) {
+            try {
+              await deleteClient.mutateAsync(deleteClientId);
+              setDeleteClientId(null);
+            } catch (error) {
+              console.error("Failed to delete client:", error);
+            }
+          }
         }}
         title="Danışanı sil"
         description="Bu danışanı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz."

@@ -5,9 +5,11 @@ import { Card } from "@/components/ui/card";
 import ClientTable from "@/components/clients/ClientTable";
 import ClientForm from "@/components/clients/ClientForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import type { Client } from "@shared/schema";
 
 export default function Clients() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
 
   return (
     <div className="space-y-6">
@@ -30,7 +32,7 @@ export default function Clients() {
 
       {/* Clients Table */}
       <Card className="p-6">
-        <ClientTable />
+        <ClientTable onEditClient={setEditingClient} />
       </Card>
 
       {/* Create Client Modal */}
@@ -40,6 +42,20 @@ export default function Clients() {
             <DialogTitle>Yeni Danışan Ekle</DialogTitle>
           </DialogHeader>
           <ClientForm onSuccess={() => setIsCreateModalOpen(false)} />
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Client Modal */}
+      <Dialog open={!!editingClient} onOpenChange={() => setEditingClient(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Danışanı Düzenle</DialogTitle>
+          </DialogHeader>
+          <ClientForm 
+            client={editingClient || undefined}
+            mode="edit"
+            onSuccess={() => setEditingClient(null)} 
+          />
         </DialogContent>
       </Dialog>
     </div>
