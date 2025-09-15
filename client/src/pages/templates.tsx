@@ -6,9 +6,11 @@ import { useTemplates } from "@/lib/hooks/useTemplates";
 import TemplateCard from "@/components/templates/TemplateCard";
 import TemplateBuilder from "@/components/templates/TemplateBuilder";
 import EmptyState from "@/components/common/EmptyState";
+import type { Template } from "@shared/schema";
 
 export default function Templates() {
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
   const { data: templates, isLoading } = useTemplates();
 
   if (isLoading) {
@@ -38,7 +40,11 @@ export default function Templates() {
       {templates && templates.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {templates.map((template: any) => (
-            <TemplateCard key={template.id} template={template} />
+            <TemplateCard 
+              key={template.id} 
+              template={template} 
+              onEditTemplate={setEditingTemplate}
+            />
           ))}
         </div>
       ) : (
@@ -60,6 +66,17 @@ export default function Templates() {
       {isBuilderOpen && (
         <Card className="p-6">
           <TemplateBuilder onClose={() => setIsBuilderOpen(false)} />
+        </Card>
+      )}
+
+      {/* Edit Template Builder */}
+      {editingTemplate && (
+        <Card className="p-6">
+          <TemplateBuilder 
+            template={editingTemplate}
+            mode="edit"
+            onClose={() => setEditingTemplate(null)} 
+          />
         </Card>
       )}
     </div>

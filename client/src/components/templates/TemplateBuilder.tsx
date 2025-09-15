@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, X, GripVertical, Sunrise, Sun, Moon, Coffee } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { useTemplates } from "@/lib/hooks/useTemplates";
 import { DndContext, closestCenter, type DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { TemplateSection, TemplateItem } from "@shared/schema";
+import type { TemplateSection, TemplateItem, Template } from "@shared/schema";
 
 const MEAL_TYPES = [
   { value: "Kahvaltı", label: "Kahvaltı", icon: Sunrise },
@@ -19,14 +19,25 @@ const MEAL_TYPES = [
 ] as const;
 
 interface TemplateBuilderProps {
+  template?: Template;
+  mode?: "create" | "edit";
   onClose: () => void;
 }
 
-export default function TemplateBuilder({ onClose }: TemplateBuilderProps) {
+export default function TemplateBuilder({ template, mode = "create", onClose }: TemplateBuilderProps) {
   const [name, setName] = useState("Yeni Diyet Şablonu");
   const [description, setDescription] = useState("");
   const [sections, setSections] = useState<TemplateSection[]>([]);
-  const { createTemplate } = useTemplates();
+  const { createTemplate, updateTemplate } = useTemplates();
+
+  // Update form values when template data changes for edit mode
+  useEffect(() => {
+    if (mode === "edit" && template) {
+      setName(template.name || "");
+      setDescription(template.description || "");
+      setSections((template.sections as TemplateSection[]) || []);
+    }
+  }, [template, mode]);
 
   const addSection = (title: TemplateSection["title"]) => {
     const newSection: TemplateSection = {
@@ -90,14 +101,25 @@ export default function TemplateBuilder({ onClose }: TemplateBuilderProps) {
     if (!name.trim()) return;
     
     try {
-      await createTemplate.mutateAsync({
-        name,
-        description,
-        sections,
-      });
+      if (mode === "edit" && template) {
+        await updateTemplate.mutateAsync({
+          id: template.id,
+          data: {
+            name,
+            description,
+            sections,
+          }
+        });
+      } else {
+        await createTemplate.mutateAsync({
+          name,
+          description,
+          sections,
+        });
+      }
       onClose();
     } catch (error) {
-      console.error("Failed to create template:", error);
+      console.error(`Failed to ${mode} template:`, error);
     }
   };
 
@@ -260,7 +282,9 @@ export default function TemplateBuilder({ onClose }: TemplateBuilderProps) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h4 className="font-semibold">Şablon Editörü</h4>
+        <h4 className="font-semibold">
+          {mode === "edit" ? "Şablonu Düzenle" : "Şablon Editörü"}
+        </h4>
         <Button variant="ghost" size="icon" onClick={onClose}>
           <X className="w-4 h-4" />
         </Button>
@@ -367,10 +391,12 @@ export default function TemplateBuilder({ onClose }: TemplateBuilderProps) {
         </Button>
         <Button 
           onClick={handleSave} 
-          disabled={!name.trim() || createTemplate.isPending}
+          disabled={!name.trim() || createTemplate.isPending || updateTemplate.isPending}
           data-testid="button-save-template"
         >
-          {createTemplate.isPending ? "Kaydediliyor..." : "Şablonu Kaydet"}
+          {(createTemplate.isPending || updateTemplate.isPending) 
+            ? "Kaydediliyor..." 
+            : mode === "edit" ? "Güncelle" : "Şablonu Kaydet"}
         </Button>
       </div>
     </div>
