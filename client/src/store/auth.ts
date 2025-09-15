@@ -108,17 +108,31 @@ export const useAuthStore = create<AuthState>()(
   )
 );
 
-// Selectors for easier access
-export const useAuth = () => useAuthStore((state) => ({
-  isAuthenticated: state.isAuthenticated,
-  user: state.user,
-}));
+// Individual selectors to avoid object recreation and infinite loops
+export const useIsAuthenticated = () => useAuthStore((state) => state.isAuthenticated);
+export const useUser = () => useAuthStore((state) => state.user);
 
-export const useAuthActions = () => useAuthStore((state) => ({
-  login: state.login,
-  logout: state.logout,
-  register: state.register,
-}));
+// For backward compatibility, but prefer individual selectors above
+export const useAuth = () => {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const user = useAuthStore((state) => state.user);
+  
+  return { isAuthenticated, user };
+};
+
+// Individual action selectors to avoid object recreation and infinite loops
+export const useLogin = () => useAuthStore((state) => state.login);
+export const useLogout = () => useAuthStore((state) => state.logout);
+export const useRegister = () => useAuthStore((state) => state.register);
+
+// For backward compatibility, but prefer individual selectors above
+export const useAuthActions = () => {
+  const login = useAuthStore((state) => state.login);
+  const logout = useAuthStore((state) => state.logout);
+  const register = useAuthStore((state) => state.register);
+  
+  return { login, logout, register };
+};
 
 // Export mock credentials for user reference
 export { MOCK_CREDENTIALS };

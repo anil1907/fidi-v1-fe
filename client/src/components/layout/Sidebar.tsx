@@ -8,9 +8,19 @@ import {
   BarChart3,
   Settings,
   Utensils,
-  MoreHorizontal
+  LogOut,
+  User
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth, useAuthActions } from "@/store/auth";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const navigation = [
   { name: "Genel Bakış", href: "/", icon: LayoutDashboard },
@@ -27,6 +37,17 @@ const secondaryNavigation = [
 
 export default function Sidebar() {
   const [location] = useLocation();
+  const { user } = useAuth();
+  const { logout } = useAuthActions();
+
+  const handleLogout = () => {
+    logout();
+  };
+
+  const getUserInitials = (firstName?: string, lastName?: string) => {
+    if (!firstName || !lastName) return "U";
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  };
 
   return (
     <nav className="fixed inset-y-0 left-0 z-50 w-72 bg-card border-r border-border no-print">
@@ -103,18 +124,71 @@ export default function Sidebar() {
 
         {/* User Profile */}
         <div className="p-4 border-t border-border">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-              <span className="text-sm font-medium text-primary-foreground">AY</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">Ayşe Yılmaz</p>
-              <p className="text-xs text-muted-foreground truncate">Diyetisyen</p>
-            </div>
-            <button className="p-1.5 rounded-md hover:bg-accent transition-colors">
-              <MoreHorizontal className="w-4 h-4" />
-            </button>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start h-auto p-0 hover:bg-accent"
+                data-testid="user-menu-trigger"
+              >
+                <div className="flex items-center gap-3 w-full p-2">
+                  <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                    <span className="text-sm font-medium text-primary-foreground">
+                      {getUserInitials(user?.firstName, user?.lastName)}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="text-sm font-medium truncate">
+                      {user ? `${user.firstName} ${user.lastName}` : "Kullanıcı"}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {user?.title || "Diyetisyen"}
+                    </p>
+                  </div>
+                </div>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent 
+              className="w-56 ml-4 mb-2" 
+              align="start" 
+              side="top"
+              data-testid="user-menu-content"
+            >
+              <div className="flex items-center gap-2 p-2">
+                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                  <span className="text-xs font-medium text-primary-foreground">
+                    {getUserInitials(user?.firstName, user?.lastName)}
+                  </span>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">
+                    {user ? `${user.firstName} ${user.lastName}` : "Kullanıcı"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {user?.email}
+                  </p>
+                </div>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="cursor-pointer" data-testid="menu-profile">
+                <User className="mr-2 h-4 w-4" />
+                Profil
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer" data-testid="menu-settings">
+                <Settings className="mr-2 h-4 w-4" />
+                Ayarlar
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                className="cursor-pointer text-destructive focus:text-destructive" 
+                onClick={handleLogout}
+                data-testid="menu-logout"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Çıkış Yap
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </nav>
