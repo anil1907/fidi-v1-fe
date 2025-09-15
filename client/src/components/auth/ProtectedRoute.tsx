@@ -1,4 +1,4 @@
-import { useAuth } from "@/store/auth";
+import { useIsAuthenticated } from "@/store/auth";
 import { useLocation } from "wouter";
 import { useEffect } from "react";
 
@@ -7,7 +7,7 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { isAuthenticated } = useAuth();
+  const isAuthenticated = useIsAuthenticated();
   const [, setLocation] = useLocation();
 
   useEffect(() => {

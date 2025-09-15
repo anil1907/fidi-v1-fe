@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useAuthActions, MOCK_CREDENTIALS } from "@/store/auth";
+import { useLogin, MOCK_CREDENTIALS } from "@/store/auth";
 
 const loginSchema = z.object({
   email: z.string().email("Geçerli bir e-posta adresi giriniz"),
@@ -23,7 +23,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuthActions();
+  const login = useLogin();
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),

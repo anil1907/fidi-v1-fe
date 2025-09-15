@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useAuthActions } from "@/store/auth";
+import { useRegister } from "@/store/auth";
 
 const registerSchema = z.object({
   firstName: z.string().min(2, "Ad en az 2 karakter olmalıdır"),
@@ -30,7 +30,7 @@ export default function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { register: registerUser } = useAuthActions();
+  const registerUser = useRegister();
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),

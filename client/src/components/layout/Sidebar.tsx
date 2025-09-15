@@ -12,7 +12,7 @@ import {
   User
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuth, useAuthActions } from "@/store/auth";
+import { useUser, useLogout } from "@/store/auth";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -37,8 +37,8 @@ const secondaryNavigation = [
 
 export default function Sidebar() {
   const [location] = useLocation();
-  const { user } = useAuth();
-  const { logout } = useAuthActions();
+  const user = useUser();
+  const logout = useLogout();
 
   const handleLogout = () => {
     logout();
