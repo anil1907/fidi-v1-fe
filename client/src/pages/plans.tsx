@@ -5,10 +5,16 @@ import { Card } from "@/components/ui/card";
 import { usePlans } from "@/lib/hooks/usePlans";
 import PlanCard from "@/components/plans/PlanCard";
 import PlanPreview from "@/components/plans/PlanPreview";
+import PlanFormDialog from "@/components/plans/PlanFormDialog";
+import DeleteConfirmDialog from "@/components/plans/DeleteConfirmDialog";
 import EmptyState from "@/components/common/EmptyState";
+import type { DietPlan } from "@shared/schema";
 
 export default function Plans() {
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<DietPlan | null>(null);
+  const [deletingPlan, setDeletingPlan] = useState<DietPlan | null>(null);
   const { data: plans, isLoading } = usePlans();
 
   if (isLoading) {
@@ -27,7 +33,10 @@ export default function Plans() {
             Danışanlarınız için oluşturulmuş aktif diyet planları
           </p>
         </div>
-        <Button data-testid="button-new-plan">
+        <Button 
+          onClick={() => setShowCreateDialog(true)}
+          data-testid="button-new-plan"
+        >
           <Plus className="w-4 h-4 mr-2" />
           Yeni Plan Oluştur
         </Button>
@@ -41,6 +50,8 @@ export default function Plans() {
               key={plan.id} 
               plan={plan} 
               onViewDetails={() => setSelectedPlanId(plan.id)}
+              onEdit={() => setEditingPlan(plan)}
+              onDelete={() => setDeletingPlan(plan)}
             />
           ))}
         </div>
@@ -50,7 +61,7 @@ export default function Plans() {
             title="Henüz plan yok"
             description="İlk diyet planınızı oluşturarak başlayın"
             action={
-              <Button>
+              <Button onClick={() => setShowCreateDialog(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Yeni Plan Oluştur
               </Button>
@@ -68,6 +79,26 @@ export default function Plans() {
           />
         </Card>
       )}
+
+      {/* Dialogs */}
+      <PlanFormDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        mode="create"
+      />
+
+      <PlanFormDialog
+        open={!!editingPlan}
+        onOpenChange={(open) => !open && setEditingPlan(null)}
+        plan={editingPlan || undefined}
+        mode="edit"
+      />
+
+      <DeleteConfirmDialog
+        open={!!deletingPlan}
+        onOpenChange={(open) => !open && setDeletingPlan(null)}
+        plan={deletingPlan}
+      />
     </div>
   );
 }

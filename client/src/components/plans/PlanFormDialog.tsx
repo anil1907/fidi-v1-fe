@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Calendar, CalendarDays, Plus, Minus } from "lucide-react";
@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -37,6 +37,7 @@ export default function PlanFormDialog({ open, onOpenChange, plan, mode }: PlanF
   const { data: clients } = useClients();
   const { data: templates } = useTemplates();
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  const initialTemplateIdRef = useRef<string | null>(null);
 
   const form = useForm<PlanFormData>({
     resolver: zodResolver(planFormSchema),
@@ -63,6 +64,7 @@ export default function PlanFormDialog({ open, onOpenChange, plan, mode }: PlanF
         notes: plan.notes || "",
         sections: plan.sections as TemplateSection[],
       });
+      initialTemplateIdRef.current = plan.templateId;
     } else if (mode === "create") {
       form.reset({
         name: "",
@@ -73,6 +75,7 @@ export default function PlanFormDialog({ open, onOpenChange, plan, mode }: PlanF
         notes: "",
         sections: [],
       });
+      initialTemplateIdRef.current = null;
     }
   }, [mode, plan, form]);
 
@@ -83,10 +86,22 @@ export default function PlanFormDialog({ open, onOpenChange, plan, mode }: PlanF
       const template = templates.find((t: any) => t.id === watchedTemplateId);
       if (template) {
         setSelectedTemplate(template);
-        form.setValue("sections", template.sections);
+        // Only overwrite sections if this is create mode OR user changed template
+        const userChangedTemplate = mode === "edit" && 
+          initialTemplateIdRef.current !== null && 
+          watchedTemplateId !== initialTemplateIdRef.current;
+        
+        if (mode === "create" || userChangedTemplate) {
+          form.setValue("sections", template.sections);
+        }
+        
+        // Clear the initial template ref after first change to allow subsequent changes
+        if (userChangedTemplate) {
+          initialTemplateIdRef.current = watchedTemplateId;
+        }
       }
     }
-  }, [watchedTemplateId, templates, form]);
+  }, [watchedTemplateId, templates, form, mode]);
 
   const onSubmit = async (data: PlanFormData) => {
     try {
@@ -147,6 +162,12 @@ export default function PlanFormDialog({ open, onOpenChange, plan, mode }: PlanF
           <DialogTitle>
             {mode === "create" ? "Yeni Diyet Planı" : "Diyet Planını Düzenle"}
           </DialogTitle>
+          <DialogDescription>
+            {mode === "create" 
+              ? "Danışanınız için yeni bir diyet planı oluşturun"
+              : "Mevcut diyet planının bilgilerini güncelleyin"
+            }
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -401,7 +422,10 @@ export default function PlanFormDialog({ open, onOpenChange, plan, mode }: PlanF
                 disabled={createPlan.isPending || updatePlan.isPending}
                 data-testid="button-submit"
               >
-                {mode === "create" ? "Plan Oluştur" : "Güncelle"}
+                {(createPlan.isPending || updatePlan.isPending) 
+                  ? "İşlem yapılıyor..." 
+                  : mode === "create" ? "Plan Oluştur" : "Güncelle"
+                }
               </Button>
             </div>
           </form>

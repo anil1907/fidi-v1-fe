@@ -1,4 +1,4 @@
-import { Eye, Printer, Edit } from "lucide-react";
+import { Eye, Printer, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -10,9 +10,11 @@ import { tr } from "date-fns/locale";
 interface PlanCardProps {
   plan: DietPlan;
   onViewDetails: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
-export default function PlanCard({ plan, onViewDetails }: PlanCardProps) {
+export default function PlanCard({ plan, onViewDetails, onEdit, onDelete }: PlanCardProps) {
   const startDate = new Date(plan.dateStart);
   const endDate = new Date(plan.dateEnd);
   const totalDays = differenceInDays(endDate, startDate) + 1;
@@ -58,9 +60,19 @@ export default function PlanCard({ plan, onViewDetails }: PlanCardProps) {
           <Button 
             variant="ghost" 
             size="icon"
+            onClick={onEdit}
             data-testid={`button-edit-plan-${plan.id}`}
           >
             <Edit className="w-4 h-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={onDelete}
+            className="text-destructive hover:text-destructive"
+            data-testid={`button-delete-plan-${plan.id}`}
+          >
+            <Trash2 className="w-4 h-4" />
           </Button>
         </div>
       </div>

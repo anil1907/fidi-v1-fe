@@ -49,8 +49,9 @@ export function usePlanMutations() {
   const updatePlan = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<InsertDietPlan> }) => 
       api.updatePlan(id, data),
-    onSuccess: () => {
+    onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["plans"] });
+      queryClient.invalidateQueries({ queryKey: ["plans", id] });
       toast({
         title: "Başarılı",
         description: "Diyet planı başarıyla güncellendi.",
@@ -67,8 +68,9 @@ export function usePlanMutations() {
 
   const deletePlan = useMutation({
     mutationFn: api.deletePlan,
-    onSuccess: () => {
+    onSuccess: (_, planId) => {
       queryClient.invalidateQueries({ queryKey: ["plans"] });
+      queryClient.invalidateQueries({ queryKey: ["plans", planId] });
       toast({
         title: "Başarılı",
         description: "Diyet planı başarıyla silindi.",
