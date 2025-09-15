@@ -35,7 +35,11 @@ const secondaryNavigation = [
   { name: "Ayarlar", href: "#", icon: Settings, disabled: true },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  className?: string;
+}
+
+export default function Sidebar({ className }: SidebarProps) {
   const [location] = useLocation();
   const user = useUser();
   const logout = useLogout();
@@ -50,7 +54,7 @@ export default function Sidebar() {
   };
 
   return (
-    <nav className="fixed inset-y-0 left-0 z-50 w-72 bg-card border-r border-border no-print">
+    <nav className={cn("fixed inset-y-0 left-0 z-50 w-72 bg-card border-r border-border no-print", className)}>
       <div className="flex h-full flex-col">
         {/* Logo/Brand */}
         <div className="flex h-16 shrink-0 items-center px-6 border-b border-border">

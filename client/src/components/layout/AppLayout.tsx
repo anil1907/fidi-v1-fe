@@ -8,8 +8,11 @@ interface AppLayoutProps {
 export default function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className="min-h-screen">
-      <Sidebar />
-      <main className="pl-72">
+      {/* Desktop Sidebar - Hidden on mobile */}
+      <Sidebar className="hidden md:block" />
+      
+      {/* Main content with responsive padding */}
+      <main className="pl-0 md:pl-72">
         <TopBar />
         <div className="p-6">
           {children}
