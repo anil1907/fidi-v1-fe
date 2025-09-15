@@ -215,7 +215,7 @@ export const useUIStore = create<UIState>()(
         })),
     }),
     {
-      name: "nutrisyonel-ui-store",
+      name: "fidi-ui-store",
       partialize: (state) => ({
         sidebarCollapsed: state.sidebarCollapsed,
         clientFilter: state.clientFilter,

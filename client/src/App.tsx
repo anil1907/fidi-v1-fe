@@ -28,7 +28,7 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="system" storageKey="nutrisyonel-theme">
+      <ThemeProvider defaultTheme="system" storageKey="fidi-theme">
         <TooltipProvider>
           <AppLayout>
             <Router />

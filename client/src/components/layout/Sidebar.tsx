@@ -34,10 +34,12 @@ export default function Sidebar() {
         {/* Logo/Brand */}
         <div className="flex h-16 shrink-0 items-center px-6 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <Utensils className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-semibold">Nutrisyonel</span>
+            <img 
+              src="/attached_assets/fidi-logo_1757925085635.jpg" 
+              alt="Fidi Logo" 
+              className="w-8 h-8 object-contain"
+            />
+            <span className="text-xl font-semibold text-primary">Fidi</span>
           </div>
         </div>
 
