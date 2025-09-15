@@ -29,7 +29,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       {/* Mobile Sidebar Sheet */}
       <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
         <SheetContent side="left" className="p-0 w-72">
-          <Sidebar />
+          <Sidebar className="relative inset-auto left-auto z-auto w-full h-full" />
         </SheetContent>
       </Sheet>
       

@@ -18,6 +18,8 @@ export default function TopBar() {
             size="icon"
             className="md:hidden"
             onClick={() => setMobileSidebarOpen(true)}
+            aria-expanded={mobileSidebarOpen}
+            aria-controls="mobile-sidebar"
             data-testid="button-mobile-menu"
           >
             <Menu className="w-5 h-5" />
