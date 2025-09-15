@@ -1,15 +1,29 @@
-import { Search, Bell, Moon, Sun } from "lucide-react";
+import { Search, Bell, Moon, Sun, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTheme } from "@/components/theme-provider";
+import { useUIStore } from "@/store/ui";
 
 export default function TopBar() {
   const { theme, setTheme } = useTheme();
+  const { mobileSidebarOpen, setMobileSidebarOpen } = useUIStore();
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 no-print">
       <div className="flex h-16 items-center justify-between px-6">
         <div className="flex items-center gap-4">
+          {/* Mobile hamburger menu */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            onClick={() => setMobileSidebarOpen(true)}
+            data-testid="button-mobile-menu"
+          >
+            <Menu className="w-5 h-5" />
+            <span className="sr-only">Menüyü aç</span>
+          </Button>
+          
           <h1 className="text-2xl font-semibold">Genel Bakış</h1>
         </div>
         

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUser, useLogout } from "@/store/auth";
+import { useUIStore } from "@/store/ui";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -43,9 +44,16 @@ export default function Sidebar({ className }: SidebarProps) {
   const [location] = useLocation();
   const user = useUser();
   const logout = useLogout();
+  const { setMobileSidebarOpen } = useUIStore();
 
   const handleLogout = () => {
     logout();
+    setMobileSidebarOpen(false);
+  };
+
+  const handleNavClick = () => {
+    // Close mobile sidebar when navigation link is clicked
+    setMobileSidebarOpen(false);
   };
 
   const getUserInitials = (firstName?: string, lastName?: string) => {
@@ -75,6 +83,7 @@ export default function Sidebar({ className }: SidebarProps) {
                 <Link
                   key={item.name}
                   href={item.href}
+                  onClick={handleNavClick}
                   className={cn(
                     "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors",
                     isActive 
