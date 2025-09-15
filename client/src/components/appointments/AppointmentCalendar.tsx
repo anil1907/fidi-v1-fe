@@ -1,12 +1,24 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Edit, Trash2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { useAppointments } from "@/lib/hooks/useAppointments";
 import { format, startOfWeek, addDays, addWeeks, subWeeks, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, isSameMonth } from "date-fns";
 import { tr } from "date-fns/locale";
+import type { Appointment } from "@shared/schema";
 
-export default function AppointmentCalendar() {
+interface AppointmentCalendarProps {
+  onCreateAppointment?: (date?: string, time?: string) => void;
+  onEditAppointment?: (appointment: Appointment) => void;
+  onDeleteAppointment?: (appointment: Appointment) => void;
+}
+
+export default function AppointmentCalendar({ 
+  onCreateAppointment,
+  onEditAppointment,
+  onDeleteAppointment 
+}: AppointmentCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<"week" | "month">("week");
   
@@ -138,7 +150,7 @@ export default function AppointmentCalendar() {
                 </div>
                 {weekDays.map((day, dayIndex) => {
                   const isToday = format(day, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
-                  const dayAppointments = appointments?.filter((apt: any) => 
+                  const dayAppointments = (appointments as Appointment[])?.filter((apt: Appointment) => 
                     format(new Date(apt.startsAt), "yyyy-MM-dd") === format(day, "yyyy-MM-dd") &&
                     format(new Date(apt.startsAt), "HH") === time.split(":")[0]
                   ) || [];
@@ -146,21 +158,80 @@ export default function AppointmentCalendar() {
                   return (
                     <div
                       key={`${timeIndex}-${dayIndex}`}
-                      className={`p-2 border-r border-b border-border min-h-[80px] last:border-r-0 ${
+                      className={`p-2 border-r border-b border-border min-h-[80px] last:border-r-0 cursor-pointer hover:bg-muted/50 transition-colors relative ${
                         isToday ? "bg-primary/5" : ""
                       }`}
+                      onClick={() => {
+                        onCreateAppointment?.(format(day, "yyyy-MM-dd"), time);
+                      }}
+                      data-testid={`time-slot-${format(day, "yyyy-MM-dd")}-${time}`}
                     >
-                      {dayAppointments.map((appointment: any) => (
+                      {/* Always show add appointment button */}
+                      <div className="absolute inset-x-0 bottom-1 flex justify-center opacity-0 hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs h-6 px-2 bg-background/80 hover:bg-background"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onCreateAppointment?.(format(day, "yyyy-MM-dd"), time);
+                          }}
+                          data-testid={`add-appointment-${format(day, "yyyy-MM-dd")}-${time}`}
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          Ekle
+                        </Button>
+                      </div>
+                      {dayAppointments.map((appointment: Appointment) => (
                         <div
                           key={appointment.id}
-                          className="bg-chart-2/10 border border-chart-2 rounded p-2 text-xs mb-2"
+                          className="bg-chart-2/10 border border-chart-2 rounded p-2 text-xs mb-2 group hover:bg-chart-2/20 transition-colors"
+                          onClick={(e) => e.stopPropagation()}
                           data-testid={`appointment-${appointment.id}`}
                         >
-                          <div className="font-medium text-chart-2">
-                            {appointment.title}
-                          </div>
-                          <div className="text-muted-foreground">
-                            {format(new Date(appointment.startsAt), "HH:mm")} - {format(new Date(appointment.endsAt), "HH:mm")}
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-chart-2 truncate">
+                                {appointment.title}
+                              </div>
+                              <div className="text-muted-foreground">
+                                {format(new Date(appointment.startsAt), "HH:mm")} - {format(new Date(appointment.endsAt), "HH:mm")}
+                              </div>
+                              <Badge 
+                                variant="outline" 
+                                className="mt-1 text-xs"
+                                data-testid={`status-${appointment.id}`}
+                              >
+                                {appointment.status === "scheduled" ? "Planlandı" : 
+                                 appointment.status === "done" ? "Tamamlandı" : "İptal Edildi"}
+                              </Badge>
+                            </div>
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onEditAppointment?.(appointment);
+                                }}
+                                data-testid={`edit-appointment-${appointment.id}`}
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-destructive hover:text-destructive"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onDeleteAppointment?.(appointment);
+                                }}
+                                data-testid={`delete-appointment-${appointment.id}`}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -193,17 +264,22 @@ export default function AppointmentCalendar() {
             {calendarDays.map((day, index) => {
               const isToday = format(day, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
               const isCurrentMonth = isSameMonth(day, currentDate);
-              const dayAppointments = appointments?.filter((apt: any) => 
+              const dayAppointments = (appointments as Appointment[])?.filter((apt: Appointment) => 
                 format(new Date(apt.startsAt), "yyyy-MM-dd") === format(day, "yyyy-MM-dd")
               ) || [];
 
               return (
                 <div
                   key={index}
-                  className={`min-h-[120px] p-2 border-r border-b border-border last:border-r-0 ${
+                  className={`min-h-[120px] p-2 border-r border-b border-border last:border-r-0 cursor-pointer hover:bg-muted/30 transition-colors ${
                     isToday ? "bg-primary/5" : ""
                   } ${!isCurrentMonth ? "bg-muted/30" : ""}`}
                   data-testid={`day-${format(day, "yyyy-MM-dd")}`}
+                  onClick={() => {
+                    if (isCurrentMonth) {
+                      onCreateAppointment?.(format(day, "yyyy-MM-dd"));
+                    }
+                  }}
                 >
                   {/* Day Number */}
                   <div className={`text-sm font-medium mb-2 ${
@@ -217,18 +293,40 @@ export default function AppointmentCalendar() {
                   </div>
 
                   {/* Appointments */}
-                  <div className="space-y-1">
-                    {dayAppointments.slice(0, 3).map((appointment: any) => (
+                  <div className="space-y-1" onClick={(e) => e.stopPropagation()}>
+                    {dayAppointments.slice(0, 3).map((appointment: Appointment) => (
                       <div
                         key={appointment.id}
-                        className="bg-chart-2/10 border border-chart-2 rounded px-2 py-1 text-xs"
+                        className="bg-chart-2/10 border border-chart-2 rounded px-2 py-1 text-xs group hover:bg-chart-2/20 transition-colors cursor-pointer"
                         data-testid={`month-appointment-${appointment.id}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditAppointment?.(appointment);
+                        }}
                       >
-                        <div className="font-medium text-chart-2 truncate">
-                          {appointment.title}
-                        </div>
-                        <div className="text-muted-foreground">
-                          {format(new Date(appointment.startsAt), "HH:mm")}
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-chart-2 truncate">
+                              {appointment.title}
+                            </div>
+                            <div className="text-muted-foreground">
+                              {format(new Date(appointment.startsAt), "HH:mm")}
+                            </div>
+                          </div>
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-4 w-4 p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDeleteAppointment?.(appointment);
+                              }}
+                              data-testid={`delete-month-appointment-${appointment.id}`}
+                            >
+                              <Trash2 className="h-2 w-2" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -250,12 +348,12 @@ export default function AppointmentCalendar() {
         <h4 className="font-semibold mb-4">Bugünün Randevuları</h4>
         <div className="space-y-3">
           {appointments && appointments.length > 0 ? (
-            appointments
-              .filter((apt: any) => format(new Date(apt.startsAt), "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd"))
-              .map((appointment: any) => (
+            (appointments as Appointment[])
+              .filter((apt: Appointment) => format(new Date(apt.startsAt), "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd"))
+              .map((appointment: Appointment) => (
                 <div
                   key={appointment.id}
-                  className="flex items-center justify-between p-3 bg-card rounded-lg border border-border"
+                  className="flex items-center justify-between p-3 bg-card rounded-lg border border-border hover:bg-muted/50 transition-colors group"
                   data-testid={`today-appointment-${appointment.id}`}
                 >
                   <div className="flex items-center gap-3">
@@ -265,14 +363,44 @@ export default function AppointmentCalendar() {
                       <div className="text-sm text-muted-foreground">
                         {appointment.description || "Açıklama yok"}
                       </div>
+                      <Badge 
+                        variant="outline" 
+                        className="mt-1 text-xs"
+                        data-testid={`today-status-${appointment.id}`}
+                      >
+                        {appointment.status === "scheduled" ? "Planlandı" : 
+                         appointment.status === "done" ? "Tamamlandı" : "İptal Edildi"}
+                      </Badge>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-sm font-medium">
-                      {format(new Date(appointment.startsAt), "HH:mm")} - {format(new Date(appointment.endsAt), "HH:mm")}
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <div className="text-sm font-medium">
+                        {format(new Date(appointment.startsAt), "HH:mm")} - {format(new Date(appointment.endsAt), "HH:mm")}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {Math.round((new Date(appointment.endsAt).getTime() - new Date(appointment.startsAt).getTime()) / (1000 * 60))} dakika
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      {Math.round((new Date(appointment.endsAt).getTime() - new Date(appointment.startsAt).getTime()) / (1000 * 60))} dakika
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => onEditAppointment?.(appointment)}
+                        data-testid={`edit-today-appointment-${appointment.id}`}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        onClick={() => onDeleteAppointment?.(appointment)}
+                        data-testid={`delete-today-appointment-${appointment.id}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 </div>

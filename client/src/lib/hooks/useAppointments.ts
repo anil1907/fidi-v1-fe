@@ -51,8 +51,9 @@ export function useAppointmentMutations() {
   const updateAppointment = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<InsertAppointment> }) => 
       api.updateAppointment(id, data),
-    onSuccess: () => {
+    onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["appointments", id] });
       toast({
         title: "Başarılı",
         description: "Randevu başarıyla güncellendi.",
@@ -69,8 +70,9 @@ export function useAppointmentMutations() {
 
   const deleteAppointment = useMutation({
     mutationFn: api.deleteAppointment,
-    onSuccess: () => {
+    onSuccess: (_, appointmentId) => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["appointments", appointmentId] });
       toast({
         title: "Başarılı",
         description: "Randevu başarıyla silindi.",
