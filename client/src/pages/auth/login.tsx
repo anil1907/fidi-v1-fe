@@ -38,6 +38,8 @@ export default function Login() {
     setError("");
     
     try {
+      console.log('AUTH_LOGIN_URL', import.meta.env.VITE_AUTH_LOGIN_URL);
+
       const success = await login(data);
       if (success) {
         setLocation("/");
@@ -45,7 +47,8 @@ export default function Login() {
         setError("E-posta veya şifre hatalı");
       }
     } catch (err) {
-      setError("Giriş sırasında bir hata oluştu");
+      const message = err instanceof Error ? err.message : "Giris sirasinda bir hata olustu";
+      setError(message || "Giris sirasinda bir hata olustu");
     } finally {
       setIsLoading(false);
     }
@@ -197,3 +200,4 @@ export default function Login() {
     </div>
   );
 }
+
